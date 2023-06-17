@@ -1,0 +1,56 @@
+- name: build_env
+  hosts: 'build'
+  become: true
+
+  tasks:
+  - name: jdk_install
+    apt:
+      name: 'default-jdk'
+      state: present
+
+  - name: maven_install
+    apt:
+      name: 'maven'
+      state: present
+
+  - name: git_install
+    apt:
+      name: 'git'
+      state: present
+
+  - name: prj_dwnld
+    git:
+      repo: 'https://github.com/boxfuse/boxfuse-sample-java-war-hello.git'
+      dest: '/opt/app'
+
+  - name: prj_package
+    shell: mvn clean package
+    args:
+      chdir: '/opt/app'
+
+  - name: war_file
+    fetch:
+      src: '/opt/app/target/hello-1.0.war'
+      dest: '/opt/app/hello-1.0.war'
+      flat: yes
+
+- name: env-PR
+  hosts: 'prod'
+  become: true
+
+  tasks:
+
+  - name: tomcat_install
+    apt:
+      name: 'tomcat9'
+      state: present
+
+  - name: webapp-file_cp
+    copy:
+      src: '/opt/app/hello-1.0.war'
+      dest: '/var/lib/tomcat9/webapps/hello-1.0.war'
+
+  - name: tomcat_start
+    service:
+      name: 'tomcat9'
+      state: started
